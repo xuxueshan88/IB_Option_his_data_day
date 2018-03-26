@@ -40,7 +40,7 @@ class Processer(Thread):
             # self.historicalDataRequests_req_Seconds()
             # self.historicalDataRequests_req_Days()
             # self.optionsOperations_req()
-            self.option_minutes_req()
+            self.option_day_req()
             # self.mktData_req_opt()
             # self.historicalDataRequests_req_opt_Seconds()
 
@@ -165,10 +165,10 @@ class Processer(Thread):
 
         print('request done')
 
-    def option_minutes_req(self):
+    def option_day_req(self):
         client = MongoClient('127.0.0.1', 27017)
         my_db = client.option_data_us_mins
-        index_continue = 2647
+        index_continue = -1
         time_continue = 0
         if index_continue == -1:
             for index in self.stock_code_map.keys():
@@ -192,37 +192,31 @@ class Processer(Thread):
             index_continue = 0
         option_code_map = self.client.option_code_map
 
-        queryTime = datetime.datetime(2017, 11, 24, 23, 59, 59)
-        queryTime += timedelta(days=7*time_continue)
-        while queryTime < datetime.datetime(2018, 3, 19, 23, 59, 59) and not self.client.process_done:
-            for index in range(index_continue, len(option_code_map)):
-                if self.client.process_done:
+        queryTime = datetime.datetime(2018, 3, 27, 23, 59, 59)
+        for index in range(index_continue, len(option_code_map)):
+            if self.client.process_done:
+                break
+            order_id = index * 100000 + time_continue
+            option_code = option_code_map[index]
+            time_recorder = 0
+            self.client.queryTime = queryTime.strftime("%Y%m%d %H:%M:%S")
+            self.client.reqHistoricalData(order_id, ContractSamples.OptionWithLocalSymbol(option_code),
+                                          queryTime.strftime("%Y%m%d %H:%M:%S"), "6 M", "1 day", "TRADES", 1, 1,
+                                          False, [])
+            time.sleep(random.randint(8, 15))
+
+            while not self.client.process_done:
+                if self.client.opt_req_next_code:
+                    self.client.opt_req_next_code = False
+                    print('next code...............')
                     break
-                order_id = index * 100000 + time_continue
-                option_code = option_code_map[index]
-                time_recorder = 0
-                self.client.queryTime = queryTime.strftime("%Y%m%d %H:%M:%S")
-                self.client.reqHistoricalData(order_id, ContractSamples.OptionWithLocalSymbol(option_code),
-                                              queryTime.strftime("%Y%m%d %H:%M:%S"), "5 D", "1 min", "TRADES", 1, 1,
-                                              False, [])
-                time.sleep(random.randint(8, 15))
-
-                while not self.client.process_done:
-                    if self.client.opt_req_next_code:
-                        self.client.opt_req_next_code = False
-                        print('next code...............')
-                        break
-                    else:
-                        time.sleep(1)
-                        time_recorder += 1
-                        if time_recorder > 120:  # 2分钟内没有返回内容，则跳过
-                            fw = open('data.txt', 'a')
-                            fw.write(option_code + ', ' + str(order_id) + ', ' + str(queryTime) + '\n')
-                            fw.close()
-                            self.client.opt_req_next_code = True
-                            # break
-                        print(datetime.datetime.now()," ", order_id, ' sleeping.................')
-
-            index_continue = 0
-            time_continue += 1
-            queryTime += timedelta(days=7)
+                else:
+                    time.sleep(1)
+                    time_recorder += 1
+                    if time_recorder > 120:  # 2分钟内没有返回内容，则跳过
+                        fw = open('data.txt', 'a')
+                        fw.write(option_code + ', ' + str(order_id) + ', ' + str(queryTime) + '\n')
+                        fw.close()
+                        self.client.opt_req_next_code = True
+                        # break
+                    print(datetime.datetime.now()," ", order_id, ' sleeping.................')
