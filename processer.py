@@ -167,22 +167,22 @@ class Processer(Thread):
 
     def option_day_req(self):
         client = MongoClient('127.0.0.1', 27017)
-        my_db = client.option_data_us_mins
+        my_db = client.option_data_us_day
         index_continue = -1
-        time_continue = 0
         if index_continue == -1:
             for index in self.stock_code_map.keys():
+                self.client.next_contract = False
                 if self.client.process_done:
                     break
                 else:
                     stock_code = self.stock_code_map[index]
                     my_db[stock_code].create_index([('date', ASCENDING), ('option_code', ASCENDING)])
                     self.client.reqContractDetails(index, ContractSamples.OptionForQuery(stock_code))
-                    time.sleep(30)
                     print('Asked for ', str(stock_code))
-            while not self.client.req_opt_contract_end and not self.client.process_done:
-                print('waiting for req_opt_contract_end Done')
-                time.sleep(1)
+
+                    while not self.client.next_contract and not self.client.process_done:
+                        time.sleep(5)
+                        print('waiting for contract', str(stock_code))
             print(self.client.option_code_map)
         else:
             temp = pd.read_csv('option_code_map.csv')
@@ -192,18 +192,18 @@ class Processer(Thread):
             index_continue = 0
         option_code_map = self.client.option_code_map
 
-        queryTime = datetime.datetime(2018, 3, 27, 23, 59, 59)
+        queryTime = datetime.datetime(2018, 3, 27, 0, 0)
         for index in range(index_continue, len(option_code_map)):
             if self.client.process_done:
                 break
-            order_id = index * 100000 + time_continue
+            order_id = index * 100000
             option_code = option_code_map[index]
             time_recorder = 0
             self.client.queryTime = queryTime.strftime("%Y%m%d %H:%M:%S")
             self.client.reqHistoricalData(order_id, ContractSamples.OptionWithLocalSymbol(option_code),
-                                          queryTime.strftime("%Y%m%d %H:%M:%S"), "6 M", "1 day", "TRADES", 1, 1,
+                                          queryTime.strftime("%Y%m%d"), "6 M", "1 day", "TRADES", 1, 1,
                                           False, [])
-            time.sleep(random.randint(8, 15))
+            time.sleep(random.randint(8, 12))
 
             while not self.client.process_done:
                 if self.client.opt_req_next_code:

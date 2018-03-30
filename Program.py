@@ -227,12 +227,12 @@ class TestApp(TestWrapper, TestClient):
         self.tick_num = 1
         self.process_done = False
         self.option_code_map = []
-        self.req_opt_contract_end = False
         self.opt_req_next_code = False
         self.opt_req_continue = False
         self.lasttime = None
         self.order_id = 0
         self.queryTime = ''
+        self.next_contract = None
 
 
     def dumpTestCoverageSituation(self):
@@ -1205,8 +1205,8 @@ class TestApp(TestWrapper, TestClient):
         super().contractDetailsEnd(reqId)
         print("ContractDetailsEnd. ", reqId, "\n")
         print(len(self.option_code_map))
+        self.next_contract = True
         if reqId == stock_code_max_index:
-            self.req_opt_contract_end = True
             option_map = pd.DataFrame(self.option_code_map,columns=['option_code'])
             option_map.to_csv('option_code_map.csv',index=False)
 
@@ -1815,7 +1815,7 @@ def main():
     # cmdLineParser.add_option("-c", action="store_True", dest="use_cache", default = False, help = "use the cache")
     # cmdLineParser.add_option("-f", action="store", type="string", dest="file", default="", help="the input file")
     cmdLineParser.add_argument("-p", "--port", action="store", type=int,
-                               dest="port", default=4001, help="The TCP port to use")
+                               dest="port", default=7496, help="The TCP port to use")
     cmdLineParser.add_argument("-C", "--global-cancel", action="store_true",
                                dest="global_cancel", default=False,
                                help="whether to trigger a globalCancel req")

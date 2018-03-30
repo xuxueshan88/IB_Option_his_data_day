@@ -12,7 +12,7 @@
 #                    'BABA  180420C00185000', 'BABA  180420C00190000', 'BABA  180420C00195000'
 #                    ]
 # stock_code_list = ['AAPL  180420C00180000']
-stock_code_list = ['AAPL', 'BABA']
+stock_code_list = ['SPY', 'DIA', 'QQQ']
 
 stock_code_map = {}
 index = 1
